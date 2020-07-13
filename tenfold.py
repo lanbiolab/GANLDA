@@ -12,13 +12,13 @@ from model import GANLDAModel
 import itertools
 from sklearn.decomposition import PCA
 
-parser = argparse.ArgumentParser(description='GANLDA Example')
+parser = argparse.ArgumentParser(description='GANLDA ten-fold')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='enables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 
-parser.add_argument('--gan_in', type=int, default=64,
+parser.add_argument('--gan_in', type=int, default=128,
                         help='PCA embedding size.')
 parser.add_argument('--gan_out', type=int, default=8,
                         help='GAN embedding size.')
@@ -91,10 +91,13 @@ for i in range(0, len(one_list), split):
     temp_l = np.zeros((row_n, row_n))
     temp_d = np.zeros((col_n, col_n))
     adj = np.vstack((np.hstack((temp_l, rel_matrix)), np.hstack((rel_matrix.T, temp_d))))
+    
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[200, 800], gamma=0.8)
 
     for epoch in range(1, 1000):
         out, loss = methods.train(rel_matrix, ganlda_model,optimizer, lncx, disx, adj) # label, ganlda_model, optimizer, lncx, disx, adj
         print('the ' + str(epoch) + ' times loss is ' + str(loss))
+        scheduler.step()
 
     # evaluation start
     output = out.cpu().data.numpy()
