@@ -78,6 +78,7 @@ adj = np.vstack((np.hstack((temp_l, rel_matrix)), np.hstack((rel_matrix.T, temp_
 scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[200, 800], gamma=0.8)
 
 for epoch in range(1, 1000):
+    # train
     out, loss = methods.train(rel_matrix, ganlda_model, optimizer, lncx, disx,
                               adj)  # label, ganlda_model, optimizer, lncx, disx, adj
     print('the ' + str(epoch) + ' times loss is ' + str(loss))
