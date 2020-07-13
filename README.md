@@ -1,5 +1,5 @@
 # GAMCLDA
-The implementation of “GANLDA: Graph attention network for lncRNA-disease associations prediction”
+The implementation of “GANLDA: Graph attention network for lncRNA-disease associations prediction”, the GAT layer is based on [DGL](https://github.com/dmlc/dgl).  
 
 ## Requirement
 
@@ -33,8 +33,16 @@ The implementation of “GANLDA: Graph attention network for lncRNA-disease asso
 ### The diseases and lncRNAs association matrix: lncRNA_disease_Associations.h5
 ### The diseases features: disease_Features.h5
 ### The lncRNAs features: lncRNA_Features.h5
+### The lncRNAs name: lncRNA-name.xlsx
+### The disease doid: doid.xlsx
 
 ## Run
+### The ganlda init program entry: ganlda_init.py
 ### The 10-fold program entry: tenfold.py
 ### The denovo program entry: denovo.py
+
+## Obtain the score matrix
+### If you want to obtain score matrix by GANLDA framework, please run ganlda_init.py directly.
+
+
 
