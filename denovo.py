@@ -16,7 +16,7 @@ parser.add_argument('--no-cuda', action='store_true', default=False,
 parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 
-parser.add_argument('--gan_in', type=int, default=32,
+parser.add_argument('--gan_in', type=int, default=128,
                         help='PCA embedding size.')
 parser.add_argument('--gan_out', type=int, default=8,
                         help='GAN embedding size.')
@@ -44,6 +44,8 @@ mlp_layers = args.mlp_layers
 torch.manual_seed(args.seed)
 
 device = torch.device('cpu')
+
+# load feature data
 with h5py.File('lncRNA_Features.h5', 'r') as hf:
     lncx = hf['infor'][:]
     pca = PCA(n_components=gan_in_channels)
@@ -55,23 +57,17 @@ with h5py.File('disease_Features.h5', 'r') as hf:
     diseasex = pca.fit_transform(diseasex)
     disx = torch.Tensor(diseasex)
 
+# load lncRNA-disease associations
 with h5py.File('lncRNA_disease_Associations.h5', 'r') as hf:
     lncrna_disease_matrix = hf['rating'][:]
     lncrna_disease_matrix_val =  lncrna_disease_matrix.copy()
 
-all_tpr = []
-all_fpr = []
-
-all_recall = []
-all_precision = []
-all_accuracy = []
-
 # denovo start
-for i in range(412):
+for i in range(lncrna_disease_matrix.shape[1]):
     new_lncrna_disease_matrix = lncrna_disease_matrix.copy()
     roc_lncrna_disease_matrix = lncrna_disease_matrix.copy()
-    if ((False in (new_lncrna_disease_matrix[:,i]==0))==False):
-        continue
+    
+    # de novo test for a new disease
     new_lncrna_disease_matrix[:,i] = 0
 
     rel_matrix = new_lncrna_disease_matrix
@@ -85,66 +81,15 @@ for i in range(412):
     optimizer = torch.optim.Adam(ganlda_model.parameters(), lr=lr,
                                  weight_decay=weight_decay)
 
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[200, 800], gamma=0.8)
     for epoch in range(1, 1000):
+        # train
         out, loss = methods.train(rel_matrix, ganlda_model, optimizer, lncx, disx,
                                   adj)  # label, ganlda_model, optimizer, lncx, disx, adj
         print('the ' + str(epoch) + ' times loss is' + str(loss))
-
+        scheduler.step()
+    
+    # score matrix
     score_matrix = out.cpu().data.numpy()
 
-    # evaluation start
-    sort_index = np.argsort(-score_matrix[:,i],axis=0)
-    sorted_lncrna_disease_row = roc_lncrna_disease_matrix[:,i][sort_index]
-    tpr_list = []
-    fpr_list = []
-
-    recall_list = []
-    precision_list = []
-
-    accuracy_list = []
-    for cutoff in range(1, 241):
-        P_vector = sorted_lncrna_disease_row[0:cutoff]
-        N_vector = sorted_lncrna_disease_row[cutoff:]
-        TP = np.sum(P_vector == 1)
-        FP = np.sum(P_vector == 0)
-        TN = np.sum(N_vector == 0)
-        FN = np.sum(N_vector == 1)
-        tpr = TP/(TP+FN)
-        fpr = FP/(FP+TN)
-        tpr_list.append(tpr)
-        fpr_list.append(fpr)
-        recall = TP/(TP+FN)
-        precision = TP/(TP+FP)
-
-        recall_list.append(recall)
-        precision_list.append(precision)
-        accuracy = (TN + TP) / (TN + TP + FN + FP)
-
-        accuracy_list.append(accuracy)
-
-    all_tpr.append(tpr_list)
-    all_fpr.append(fpr_list)
-    all_recall.append(recall_list)
-    all_precision.append(precision_list)
-    all_accuracy.append(accuracy_list)
-
-tpr_arr = np.array(all_tpr)
-fpr_arr = np.array(all_fpr)
-
-recall_arr = np.array(all_recall)
-precision_arr = np.array(all_precision)
-accuracy_arr = np.array(all_accuracy)
-
-mean_denovo_recall = np.mean(recall_arr,axis=0)
-mean_denovo_precision = np.mean(precision_arr,axis=0)
-
-mean_denovo_tpr = np.mean(tpr_arr,axis=0)
-mean_denovo_fpr = np.mean(fpr_arr,axis=0)
-mean_denovo_accuracy = np.mean(accuracy_arr,axis=0)
-
-roc_auc = metrics.auc(mean_denovo_fpr, mean_denovo_tpr)
-plt.plot(mean_denovo_fpr,mean_denovo_tpr, label='mean ROC=%0.4f'%roc_auc)
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.legend()
-plt.show()
+   
