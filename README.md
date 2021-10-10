@@ -1,5 +1,5 @@
 # GANLDA
-The implementation of “GANLDA: Graph attention network for lncRNA-disease associations prediction”, the GAT layer is based on [DGL](https://github.com/dmlc/dgl).  
+The implementation of “GANLDA: Graph attention network for lncRNA-disease associations prediction”, Wei Lan, Ximin Wu, Qingfeng Chen, Wei Peng, Jianxin Wang, Yiping Phoebe Chen. Neurocomputing, 2021. The GAT layer is based on [DGL](https://github.com/dmlc/dgl).  
 
 ## Requirement
 
